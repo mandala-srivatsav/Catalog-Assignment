@@ -1,0 +1,64 @@
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ShamirSecretSharing {
+
+    public static void main(String[] args) {
+        String filePath = "testcase.json"; // Path to your JSON input file
+        try {
+            String content = new String(Files.readAllBytes(Paths.get(filePath)));
+            JSONObject jsonObject = new JSONObject(content);
+            JSONObject keys = jsonObject.getJSONObject("keys");
+            int n = keys.getInt("n");
+            int k = keys.getInt("k");
+
+            List<Integer> xValues = new ArrayList<>();
+            List<Integer> yValues = new ArrayList<>();
+
+            for (int i = 1; i <= n; i++) {
+                JSONObject root = jsonObject.getJSONObject(String.valueOf(i));
+                int base = root.getInt("base");
+                String value = root.getString("value");
+
+                int x = i; // Key is just the index
+                int y = decodeValue(value, base);
+                
+                xValues.add(x);
+                yValues.add(y);
+            }
+
+            // Calculate constant term c using Lagrange interpolation
+            int c = lagrangeInterpolation(xValues, yValues, 0);
+            System.out.println("The constant term c is: " + c);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static int decodeValue(String value, int base) {
+        return Integer.parseInt(value, base);
+    }
+
+    private static int lagrangeInterpolation(List<Integer> xValues, List<Integer> yValues, int x) {
+        int k = yValues.size();
+        int result = 0;
+
+        for (int i = 0; i < k; i++) {
+            int term = yValues.get(i);
+            for (int j = 0; j < k; j++) {
+                if (i != j) {
+                    term *= (x - xValues.get(j)) / (xValues.get(i) - xValues.get(j));
+                }
+            }
+            result += term;
+        }
+
+        return result;
+    }
+}
